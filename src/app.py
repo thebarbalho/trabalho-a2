@@ -5,7 +5,6 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from src.collect import search_videos, collect_multiple_queries
 from src.clean import clean_dataframe
 from src.classify import classificar_dataframe
 from src.metrics import calcular_metricas, resumo_por_categoria, top_videos
@@ -18,13 +17,14 @@ st.set_page_config(
     layout="wide"
 )
 
-with sns.axes_style("darkgrid"):
+st.title("⚽ Ferramenta Analítica de Engajamento Social - Conteúdos Esportivos no YouTube")
+st.markdown("---")
 
-    QUERIES_SUGERIDAS = [
-        "esportes melhores momentos", "análise esportiva", "humor esportivo",
-        "notícias esportivas", "futebol gols", "basquete cestas",
-        "futebol americano touchdown", "memes esportes", "debate esportivo",
-        "esportes radicais"
+QUERIES_SUGERIDAS = [
+    "esportes melhores momentos", "análise esportiva", "humor esportivo",
+    "notícias esportivas", "futebol gols", "basquete cestas",
+    "futebol americano touchdown", "memes esportes", "debate esportivo",
+    "esportes radicais"
 ]
 
 with st.sidebar:
@@ -68,6 +68,7 @@ if "df" not in st.session_state:
 if modo == "Coletar da API" and coletar:
     with st.spinner("Coletando dados da YouTube API..."):
         try:
+            from src.collect import search_videos, collect_multiple_queries
             if opcao_busca == "Palavra-chave única":
                 df_raw = search_videos(query, max_results=max_results)
             else:
@@ -134,6 +135,7 @@ if st.session_state.df is not None:
     with abas[1]:
         st.subheader("Resumo por Categoria")
         resumo = resumo_por_categoria(df_filtered)
+        sns.set_style("darkgrid")
 
         col_a, col_b = st.columns(2)
 
