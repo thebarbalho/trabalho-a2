@@ -18,7 +18,7 @@ st.set_page_config(
     layout="wide"
 )
 
-with sns.axes_style("darkgrid")
+with sns.axes_style("darkgrid"):
 
 QUERIES_SUGERIDAS = [
     "esportes melhores momentos", "análise esportiva", "humor esportivo",
