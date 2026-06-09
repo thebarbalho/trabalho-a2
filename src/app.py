@@ -1,3 +1,6 @@
+import matplotlib
+matplotlib.use('Agg')
+
 cd projeto-a2
 pip install -r requirements.txt
 streamlit run src/app.py
@@ -19,10 +22,7 @@ st.set_page_config(
     layout="wide"
 )
 
-sns.set_style("darkgrid")
-
-st.title("⚽ Ferramenta Analítica de Engajamento Social - Conteúdos Esportivos no YouTube")
-st.markdown("---")
+with sns.axes_style("darkgrid")
 
 QUERIES_SUGERIDAS = [
     "esportes melhores momentos", "análise esportiva", "humor esportivo",
