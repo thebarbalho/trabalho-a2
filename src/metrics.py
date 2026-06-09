@@ -1,18 +1,20 @@
 import pandas as pd
-import numpy as np
 
 def calcular_metricas(df):
     df = df.copy()
     df["engajamento_total"] = df["curtidas"] + df["comentarios"]
-    df["taxa_engajamento"] = np.where(
-        df["visualizacoes"] > 0,
-        ((df["curtidas"] + df["comentarios"]) / df["visualizacoes"]) * 100,
-        0
+
+    mask_vis = df["visualizacoes"] > 0
+    df["taxa_engajamento"] = 0.0
+    df.loc[mask_vis, "taxa_engajamento"] = (
+        (df.loc[mask_vis, "curtidas"] + df.loc[mask_vis, "comentarios"])
+        / df.loc[mask_vis, "visualizacoes"] * 100
     )
-    df["curtidas_por_comentario"] = np.where(
-        df["comentarios"] > 0,
-        df["curtidas"] / df["comentarios"],
-        df["curtidas"]
+
+    mask_com = df["comentarios"] > 0
+    df["curtidas_por_comentario"] = df["curtidas"].astype(float)
+    df.loc[mask_com, "curtidas_por_comentario"] = (
+        df.loc[mask_com, "curtidas"] / df.loc[mask_com, "comentarios"]
     )
     return df
 
@@ -31,6 +33,7 @@ def top_videos(df, metrica="engajamento_total", n=10):
         ["titulo", "canal", "categoria", metrica, "visualizacoes"]
     ]
 
+
 def extrair_tempo(df):
     df = df.copy()
     df["ano"] = df["data_publicacao"].dt.year
@@ -39,6 +42,7 @@ def extrair_tempo(df):
     df["hora"] = df["data_publicacao"].dt.hour
     df["semana_ano"] = df["data_publicacao"].dt.isocalendar().week.astype(int)
     return df
+
 
 def engajamento_por_dia(df):
     ordem = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -57,12 +61,14 @@ def engajamento_por_dia(df):
     result = result.sort_values("ordem").drop(columns=["ordem"])
     return result
 
+
 def engajamento_ao_longo_do_tempo(df):
     return df.groupby("ano").agg(
         total_engajamento=("engajamento_total", "sum"),
         total_visualizacoes=("visualizacoes", "sum"),
         total_videos=("video_id", "count")
     ).reset_index()
+
 
 def tendencias_categoria_ao_longo_tempo(df):
     df["mes_ano"] = df["data_publicacao"].dt.to_period("M").astype(str)
