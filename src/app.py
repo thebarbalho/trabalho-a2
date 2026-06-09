@@ -20,11 +20,11 @@ st.set_page_config(
 
 with sns.axes_style("darkgrid"):
 
-QUERIES_SUGERIDAS = [
-    "esportes melhores momentos", "análise esportiva", "humor esportivo",
-    "notícias esportivas", "futebol gols", "basquete cestas",
-    "futebol americano touchdown", "memes esportes", "debate esportivo",
-    "esportes radicais"
+    QUERIES_SUGERIDAS = [
+        "esportes melhores momentos", "análise esportiva", "humor esportivo",
+        "notícias esportivas", "futebol gols", "basquete cestas",
+        "futebol americano touchdown", "memes esportes", "debate esportivo",
+        "esportes radicais"
 ]
 
 with st.sidebar:
