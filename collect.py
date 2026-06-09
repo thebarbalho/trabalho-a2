@@ -1,6 +1,6 @@
 import pandas as pd
 from googleapiclient.discovery import build
-from src.utils import get_api_key
+from utils import get_api_key
 
 def search_videos(query, max_results=50, order="relevance"):
     api_key = get_api_key()
