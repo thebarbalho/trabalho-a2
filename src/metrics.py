@@ -33,7 +33,6 @@ def top_videos(df, metrica="engajamento_total", n=10):
         ["titulo", "canal", "categoria", metrica, "visualizacoes"]
     ]
 
-
 def extrair_tempo(df):
     df = df.copy()
     df["ano"] = df["data_publicacao"].dt.year
@@ -42,7 +41,6 @@ def extrair_tempo(df):
     df["hora"] = df["data_publicacao"].dt.hour
     df["semana_ano"] = df["data_publicacao"].dt.isocalendar().week.astype(int)
     return df
-
 
 def engajamento_por_dia(df):
     ordem = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -61,14 +59,12 @@ def engajamento_por_dia(df):
     result = result.sort_values("ordem").drop(columns=["ordem"])
     return result
 
-
 def engajamento_ao_longo_do_tempo(df):
     return df.groupby("ano").agg(
         total_engajamento=("engajamento_total", "sum"),
         total_visualizacoes=("visualizacoes", "sum"),
         total_videos=("video_id", "count")
     ).reset_index()
-
 
 def tendencias_categoria_ao_longo_tempo(df):
     df["mes_ano"] = df["data_publicacao"].dt.to_period("M").astype(str)
