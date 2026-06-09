@@ -1,7 +1,3 @@
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
 import matplotlib
 matplotlib.use('Agg')
 
@@ -9,10 +5,10 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from clean import clean_dataframe
-from classify import classificar_dataframe
-from metrics import calcular_metricas, resumo_por_categoria, top_videos, extrair_tempo, engajamento_por_dia, engajamento_ao_longe_do_tempo, tendencias_categoria_ao_longo_tempo
-from utils import save_dataframe, load_dataframe
+from src.clean import clean_dataframe
+from src.classify import classificar_dataframe
+from src.metrics import calcular_metricas, resumo_por_categoria, top_videos, extrair_tempo, engajamento_por_dia, engajamento_ao_longe_do_tempo, tendencias_categoria_ao_longo_tempo
+from src.utils import save_dataframe, load_dataframe
 
 st.set_page_config(
     page_title="Analytics Esportivo - YouTube",
@@ -71,7 +67,7 @@ if "df" not in st.session_state:
 if modo == "Coletar da API" and coletar:
     with st.spinner("Coletando dados da YouTube API..."):
         try:
-            from collect import search_videos, collect_multiple_queries
+            from src.collect import search_videos, collect_multiple_queries
             if opcao_busca == "Palavra-chave única":
                 df_raw = search_videos(query, max_results=max_results)
             else:
