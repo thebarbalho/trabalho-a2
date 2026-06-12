@@ -34,7 +34,7 @@ with st.sidebar:
         opcao_busca = st.radio("Busca", ["Palavra-chave única", "Múltiplas consultas"])
 
         if opcao_busca == "Palavra-chave única":
-            query = st.text_input("Palavra-chave", "futebol gols")
+            query = st.text_input("Palavra-chave")
             max_results = st.slider("Quantidade de vídeos", 5, 50, 20)
         else:
             queries_selecionadas = st.multiselect(
