@@ -28,7 +28,7 @@ QUERIES_SUGERIDAS = [
 
 with st.sidebar:
     st.header("Configuração")
-    modo = st.radio("Fonte dos dados", ["Coletar da API", "Usar dados salvos"])
+    modo = st.radio("Fonte dos dados", ["Coletar da API"])
 
     if modo == "Coletar da API":
         opcao_busca = st.radio("Busca", ["Palavra-chave única", "Múltiplas consultas"])
