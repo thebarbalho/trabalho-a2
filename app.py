@@ -16,19 +16,19 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("⚽ Ferramenta Analítica de Engajamento Digital - Conteúdos Esportivos no YouTube")
+st.title("⚽ Ferramenta Analítica de Engajamento Social - Conteúdos Esportivos no YouTube")
 st.markdown("---")
 
 QUERIES_SUGERIDAS = [
-    "Esportes Melhores Momentos", "Análise Esportiva", "Humor Esportivo",
-    "Notícias Esportivas", "Futebol Gols", "Basquete Cestas",
-    "Futebol Americano Touchdown", "Memes Esportes", "Debate Esportivo",
-    "Esportes Radicais", "F1", "Mesa Redonda de Esportes", "Highlights and Skills"
+    "esportes melhores momentos", "análise esportiva", "humor esportivo",
+    "notícias esportivas", "futebol gols", "basquete cestas",
+    "futebol americano touchdown", "memes esportes", "debate esportivo",
+    "esportes radicais"
 ]
 
 with st.sidebar:
-    st.header("Configurações de Pesquisa")
-    modo = st.radio("Fonte dos dados", ["Coletar da YouTube API"])
+    st.header("Configuração")
+    modo = st.radio("Fonte dos dados", ["Coletar da API", "Usar dados salvos"])
 
     if modo == "Coletar da API":
         opcao_busca = st.radio("Busca", ["Palavra-chave única", "Múltiplas consultas"])
@@ -58,7 +58,7 @@ with st.sidebar:
             carregar = st.button("Carregar", type="primary", use_container_width=True)
 
     st.markdown("---")
-    st.caption("Projeto de A2 de Programação")
+    st.caption("Projeto A2 - Programação")
 
 if "df" not in st.session_state:
     st.session_state.df = None
@@ -113,9 +113,38 @@ if st.session_state.df is not None:
     else:
         df_filtered = df_analyze[df_analyze["categoria"].isin(categoria_filtro)]
 
-    abas = st.tabs(["Visão Geral", "Por Categoria", "Análise Temporal", "Tabela de Dados"])
+    abas = st.tabs(["Pesquisa Personalizada", "Visão Geral", "Por Categoria", "Análise Temporal", "Tabela de Dados"])
 
     with abas[0]:
+        st.subheader("Pesquisar Vídeos Personalizados")
+        col_query, col_btn = st.columns([3, 1])
+        with col_query:
+            termo_personalizado = st.text_input("Digite sua pesquisa", key="pesquisa_custom")
+        with col_btn:
+            st.markdown("##")
+            pesquisar = st.button("Pesquisar", type="primary", use_container_width=True)
+
+        if pesquisar and termo_personalizado.strip():
+            with st.spinner("Pesquisando na YouTube API..."):
+                try:
+                    from src.collect import search_videos
+                    df_busca = search_videos(termo_personalizado.strip(), max_results=20)
+                    if df_busca.empty:
+                        st.warning("Nenhum resultado encontrado.")
+                    else:
+                        st.session_state.df = df_busca
+                        st.success(f"{len(df_busca)} vídeos encontrados!")
+                        st.dataframe(
+                            df_busca[["titulo", "canal", "visualizacoes"]].head(10),
+                            use_container_width=True, hide_index=True
+                        )
+                except Exception as e:
+                    st.error(f"Erro na pesquisa: {e}")
+
+        st.markdown("---")
+        st.info("Use a sidebar para coletar dados com consultas pré-definidas ou múltiplas palavras-chave.")
+
+    with abas[1]:
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Total de Vídeos", len(df_filtered))
@@ -131,7 +160,7 @@ if st.session_state.df is not None:
         top10 = top_videos(df_filtered)
         st.dataframe(top10, use_container_width=True, hide_index=True)
 
-    with abas[1]:
+    with abas[2]:
         st.subheader("Resumo por Categoria")
         resumo = resumo_por_categoria(df_filtered)
         sns.set_style("darkgrid")
@@ -166,7 +195,7 @@ if st.session_state.df is not None:
 
         st.dataframe(resumo, use_container_width=True, hide_index=True)
 
-    with abas[2]:
+    with abas[3]:
         st.subheader("Engajamento por Dia da Semana")
 
         dias = engajamento_por_dia(df_filtered)
@@ -193,7 +222,7 @@ if st.session_state.df is not None:
             fig4.tight_layout()
             st.pyplot(fig4)
 
-    with abas[3]:
+    with abas[4]:
         colunas_exibir = ["titulo", "canal", "categoria", "visualizacoes",
                           "curtidas", "comentarios", "engajamento_total",
                           "taxa_engajamento", "data_publicacao"]
