@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from src.clean import clean_dataframe
 from src.classify import classificar_dataframe
-from src.metrics import calcular_metricas, resumo_por_categoria, top_videos, extrair_tempo, engajamento_por_dia, engajamento_ao_longe_do_tempo, tendencias_categoria_ao_longo_tempo
+from src.metrics import calcular_metricas, resumo_por_categoria, top_videos, extrair_tempo, engajamento_por_dia, tendencias_categoria_ao_longo_tempo
 from src.utils import save_dataframe, load_dataframe
 
 st.set_page_config(
