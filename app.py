@@ -20,10 +20,10 @@ st.title("⚽ Ferramenta Analítica de Engajamento Social - Conteúdos Esportivo
 st.markdown("---")
 
 QUERIES_SUGERIDAS = [
-    "esportes melhores momentos", "análise esportiva", "humor esportivo",
-    "notícias esportivas", "futebol gols", "basquete cestas",
-    "futebol americano touchdown", "memes esportes", "debate esportivo",
-    "esportes radicais"
+    "Esportes Melhores Momentos", "Análise Esportiva", "Humor Esportivo",
+    "Notícias Esportivas", "Futebol Gols", "Basquete Cestas",
+    "Futebol Americano Touchdown", "Memes Esportes", "Debate Esportivo",
+    "Esportes Radicais", "F1", "Mesa Redonda de Esportes", "Highlights and Skills"
 ]
 
 with st.sidebar:
@@ -58,7 +58,7 @@ with st.sidebar:
             carregar = st.button("Carregar", type="primary", use_container_width=True)
 
     st.markdown("---")
-    st.caption("Projeto A2 - Programação")
+    st.caption("Projeto A2 - Programação - Patrocinado por Josir, o Rei da Programação")
 
 if "df" not in st.session_state:
     st.session_state.df = None
