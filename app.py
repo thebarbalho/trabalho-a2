@@ -28,7 +28,7 @@ QUERIES_SUGERIDAS = [
 
 with st.sidebar:
     st.header("Configuração")
-    modo = st.radio("Fonte dos dados", ["Coletar da API"])
+    modo = st.radio("Fonte dos dados", ["Coletar da API", "Usar dados salvos"])
 
     if modo == "Coletar da API":
         opcao_busca = st.radio("Busca", ["Palavra-chave única", "Múltiplas consultas"])
@@ -116,33 +116,44 @@ if st.session_state.df is not None:
     abas = st.tabs(["Pesquisa Personalizada", "Visão Geral", "Por Categoria", "Análise Temporal", "Tabela de Dados"])
 
     with abas[0]:
-        st.subheader("Pesquisar Vídeos Personalizados")
-        col_query, col_btn = st.columns([3, 1])
-        with col_query:
-            termo_personalizado = st.text_input("Digite sua pesquisa", key="pesquisa_custom")
+        st.markdown("### 🔍 Pesquisa por Palavra-chave")
+        col_input, col_btn = st.columns([4, 1])
+        with col_input:
+            termo = st.text_input("Digite uma palavra-chave e pressione Enter", key="termo_pesquisa")
         with col_btn:
             st.markdown("##")
-            pesquisar = st.button("Pesquisar", type="primary", use_container_width=True)
+            buscar = st.button("🔍 Buscar", type="primary", use_container_width=True)
 
-        if pesquisar and termo_personalizado.strip():
-            with st.spinner("Pesquisando na YouTube API..."):
+        if (buscar or (termo and st.session_state.get("_ultimo_termo") != termo)) and termo.strip():
+            st.session_state._ultimo_termo = termo.strip()
+            with st.spinner("Coletando dados da YouTube API..."):
                 try:
                     from src.collect import search_videos
-                    df_busca = search_videos(termo_personalizado.strip(), max_results=20)
+                    df_busca = search_videos(termo.strip(), max_results=20)
                     if df_busca.empty:
-                        st.warning("Nenhum resultado encontrado.")
+                        st.warning("Nenhum vídeo encontrado para essa palavra-chave.")
                     else:
                         st.session_state.df = df_busca
-                        st.success(f"{len(df_busca)} vídeos encontrados!")
-                        st.dataframe(
-                            df_busca[["titulo", "canal", "visualizacoes"]].head(10),
-                            use_container_width=True, hide_index=True
-                        )
+                        st.success(f"{len(df_busca)} vídeos coletados!")
                 except Exception as e:
-                    st.error(f"Erro na pesquisa: {e}")
+                    st.error(f"Erro na coleta: {e}")
 
-        st.markdown("---")
-        st.info("Use a sidebar para coletar dados com consultas pré-definidas ou múltiplas palavras-chave.")
+        if st.session_state.df is not None:
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                st.metric("Total de Vídeos", len(df_filtered))
+            with c2:
+                st.metric("Total de Visualizações", f"{df_filtered['visualizacoes'].sum():,}")
+            with c3:
+                media_taxa = df_filtered["taxa_engajamento"].mean()
+                st.metric("Taxa de Engajamento Média", f"{media_taxa:.2f}%")
+
+            st.dataframe(
+                df_filtered[["titulo", "canal", "categoria", "visualizacoes",
+                             "engajamento_total", "taxa_engajamento"]]
+                .sort_values("engajamento_total", ascending=False),
+                use_container_width=True, hide_index=True
+            )
 
     with abas[1]:
         col1, col2, col3, col4 = st.columns(4)
