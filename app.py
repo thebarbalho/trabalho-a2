@@ -113,49 +113,9 @@ if st.session_state.df is not None:
     else:
         df_filtered = df_analyze[df_analyze["categoria"].isin(categoria_filtro)]
 
-    abas = st.tabs(["Pesquisa Personalizada", "Visão Geral", "Por Categoria", "Análise Temporal", "Tabela de Dados"])
+    abas = st.tabs(["Visão Geral", "Por Categoria", "Análise Temporal", "Tabela de Dados"])
 
     with abas[0]:
-        st.markdown("### 🔍 Pesquisa por Palavra-chave")
-        col_input, col_btn = st.columns([4, 1])
-        with col_input:
-            termo = st.text_input("Digite uma palavra-chave e pressione Enter", key="termo_pesquisa")
-        with col_btn:
-            st.markdown("##")
-            buscar = st.button("🔍 Buscar", type="primary", use_container_width=True)
-
-        if (buscar or (termo and st.session_state.get("_ultimo_termo") != termo)) and termo.strip():
-            st.session_state._ultimo_termo = termo.strip()
-            with st.spinner("Coletando dados da YouTube API..."):
-                try:
-                    from src.collect import search_videos
-                    df_busca = search_videos(termo.strip(), max_results=20)
-                    if df_busca.empty:
-                        st.warning("Nenhum vídeo encontrado para essa palavra-chave.")
-                    else:
-                        st.session_state.df = df_busca
-                        st.success(f"{len(df_busca)} vídeos coletados!")
-                except Exception as e:
-                    st.error(f"Erro na coleta: {e}")
-
-        if st.session_state.df is not None:
-            c1, c2, c3 = st.columns(3)
-            with c1:
-                st.metric("Total de Vídeos", len(df_filtered))
-            with c2:
-                st.metric("Total de Visualizações", f"{df_filtered['visualizacoes'].sum():,}")
-            with c3:
-                media_taxa = df_filtered["taxa_engajamento"].mean()
-                st.metric("Taxa de Engajamento Média", f"{media_taxa:.2f}%")
-
-            st.dataframe(
-                df_filtered[["titulo", "canal", "categoria", "visualizacoes",
-                             "engajamento_total", "taxa_engajamento"]]
-                .sort_values("engajamento_total", ascending=False),
-                use_container_width=True, hide_index=True
-            )
-
-    with abas[1]:
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Total de Vídeos", len(df_filtered))
@@ -171,7 +131,7 @@ if st.session_state.df is not None:
         top10 = top_videos(df_filtered)
         st.dataframe(top10, use_container_width=True, hide_index=True)
 
-    with abas[2]:
+    with abas[1]:
         st.subheader("Resumo por Categoria")
         resumo = resumo_por_categoria(df_filtered)
         sns.set_style("darkgrid")
@@ -206,7 +166,7 @@ if st.session_state.df is not None:
 
         st.dataframe(resumo, use_container_width=True, hide_index=True)
 
-    with abas[3]:
+    with abas[2]:
         st.subheader("Engajamento por Dia da Semana")
 
         dias = engajamento_por_dia(df_filtered)
@@ -233,7 +193,7 @@ if st.session_state.df is not None:
             fig4.tight_layout()
             st.pyplot(fig4)
 
-    with abas[4]:
+    with abas[3]:
         colunas_exibir = ["titulo", "canal", "categoria", "visualizacoes",
                           "curtidas", "comentarios", "engajamento_total",
                           "taxa_engajamento", "data_publicacao"]
