@@ -16,7 +16,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("⚽ Ferramenta Analítica de Engajamento Social - Conteúdos Esportivos no YouTube")
+st.title("⚽ Ferramenta Analítica de Engajamento Digital - Conteúdos Esportivos no YouTube")
 st.markdown("---")
 
 QUERIES_SUGERIDAS = [
@@ -27,8 +27,8 @@ QUERIES_SUGERIDAS = [
 ]
 
 with st.sidebar:
-    st.header("Configuração")
-    modo = st.radio("Fonte dos dados", ["Coletar da API"])
+    st.header("Configurações de Pesquisa")
+    modo = st.radio("Fonte dos dados", ["Coletar da YouTube API"])
 
     if modo == "Coletar da API":
         opcao_busca = st.radio("Busca", ["Palavra-chave única", "Múltiplas consultas"])
@@ -58,7 +58,8 @@ with st.sidebar:
             carregar = st.button("Carregar", type="primary", use_container_width=True)
 
     st.markdown("---")
-    st.caption("Projeto A2 - Programação - Patrocinado por Josir, o Rei da Programação")
+    st.caption("Projeto de A2 de Programação, realizado sob a orientação do professor Josir Gomes")
+    st.caption("Criado por Alexandre Bacaltchuk Castello Branco e Victor de Araujo Lima Ramos Barbalho Martins, alunos da graduação em Comunicação Digital da ECMI da FGV/RJ"
 
 if "df" not in st.session_state:
     st.session_state.df = None
