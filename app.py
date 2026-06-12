@@ -58,8 +58,7 @@ with st.sidebar:
             carregar = st.button("Carregar", type="primary", use_container_width=True)
 
     st.markdown("---")
-    st.caption("Projeto de A2 de Programação, realizado sob a orientação do professor Josir Gomes")
-    st.caption("Criado por Alexandre Bacaltchuk Castello Branco e Victor de Araujo Lima Ramos Barbalho Martins, alunos da graduação em Comunicação Digital da ECMI da FGV/RJ")
+    st.caption("Projeto de A2 de Programação")
 
 if "df" not in st.session_state:
     st.session_state.df = None
