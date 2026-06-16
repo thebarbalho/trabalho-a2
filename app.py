@@ -460,6 +460,19 @@ COL_LABELS = {
     "taxa_engajamento": "Tx. Engajamento", "data_publicacao": "Publicação"
 }
 
+def style_ax(ax):
+    ax.set_facecolor("#0d1a26")
+    ax.tick_params(colors="#b0c8dd", labelsize=9)
+    ax.spines["bottom"].set_color((1, 1, 1, 0.12))
+    ax.spines["left"].set_color((1, 1, 1, 0.12))
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.xaxis.label.set_color("#b0c8dd")
+    ax.yaxis.label.set_color("#b0c8dd")
+    ax.title.set_color("#e8eef5")
+    ax.grid(True, alpha=0.08, color=(1, 1, 1, 0.1))
+    return ax
+
 def html_video_table(df, columns):
     cols = [c for c in columns if c != "video_id" and c in df.columns]
     has_link = "video_id" in df.columns and "titulo" in cols
@@ -473,7 +486,7 @@ def html_video_table(df, columns):
             val = row[c]
             if c == "titulo" and has_link:
                 url = youtube_url(row["video_id"])
-                html += f'<td><a href="{url}" target="_blank">{val}</a></td>'
+                html += f'<td><a href="{url}" target="_blank">{val}</a> <a href="{url}" target="_blank" style="color:#ff6b35;font-size:0.7rem;font-weight:600;text-decoration:none;margin-left:6px;white-space:nowrap;">▶ Assistir</a></td>'
             elif isinstance(val, (int, float)):
                 html += f"<td>{val:,.0f}</td>" if abs(val) >= 1000 else f"<td>{val}</td>"
             else:
@@ -603,6 +616,7 @@ else:
                         <div class="meta">
                             <span>👁️ {views}</span>
                             <span>⚡ {eng}</span>
+                            <span style="margin-left:auto;"><a href="{url}" target="_blank" style="color:#ff6b35;font-weight:600;text-decoration:none;font-size:0.75rem;">▶ Assistir</a></span>
                         </div>
                     </div>
                 """
@@ -617,44 +631,45 @@ else:
         col_a, col_b = st.columns(2)
 
         with col_a:
-            fig1, ax1 = plt.subplots(figsize=(10, 5))
-            ax1.set_facecolor("#0d1a26")
+            fig1, ax1 = plt.subplots(figsize=(10, 5.5))
             fig1.patch.set_facecolor("#0d1a26")
-            ax1.tick_params(colors="#8faabe")
-            ax1.spines["bottom"].set_color((1, 1, 1, 0.08))
-            ax1.spines["left"].set_color((1, 1, 1, 0.08))
-            ax1.spines["top"].set_visible(False)
-            ax1.spines["right"].set_visible(False)
-            ax1.xaxis.label.set_color("#8faabe")
-            ax1.yaxis.label.set_color("#8faabe")
-            ax1.title.set_color("#dce6f0")
-            bars = ax1.bar(resumo["categoria"], resumo["engajamento_medio"], color="#ff6b35")
-            ax1.set_xlabel("Categoria")
-            ax1.set_ylabel("Engajamento Médio")
-            ax1.tick_params(axis="x", rotation=45)
+            ax1 = style_ax(ax1)
+            cores_bar = ["#ff6b35", "#ff8c5a", "#ffa07a", "#ffb89a", "#ffd0ba"]
+            bars = ax1.bar(resumo["categoria"], resumo["engajamento_medio"],
+                           color=cores_bar[:len(resumo)], edgecolor="none", width=0.65)
+            ax1.set_xlabel("Categoria", fontsize=10, labelpad=10)
+            ax1.set_ylabel("Engajamento Médio", fontsize=10, labelpad=10)
+            ax1.tick_params(axis="x", rotation=30, pad=6)
+            ax1.set_title("Engajamento Médio por Categoria", fontsize=12, pad=12)
             for bar in bars:
                 height = bar.get_height()
-                ax1.text(bar.get_x() + bar.get_width() / 2., height,
-                         f"{height:.0f}", ha="center", va="bottom", color="#8faabe")
+                ax1.text(bar.get_x() + bar.get_width() / 2., height - height * 0.05,
+                         f"{height:.0f}", ha="center", va="top", color="#ffffff",
+                         fontsize=9, fontweight=600)
             fig1.tight_layout()
             st.pyplot(fig1)
 
         with col_b:
-            fig2, ax2 = plt.subplots(figsize=(10, 5))
+            fig2, ax2 = plt.subplots(figsize=(10, 5.5))
             fig2.patch.set_facecolor("#0d1a26")
-            cores = sns.color_palette("magma", len(resumo))
+            cores_pie = sns.color_palette("Set2", len(resumo))
             wedges, texts, autotexts = ax2.pie(
                 resumo["total_visualizacoes"],
-                labels=resumo["categoria"],
+                labels=None,
                 autopct="%1.1f%%",
-                colors=cores,
+                colors=cores_pie,
                 startangle=90,
-                textprops={"color": "#c8d6e5"}
+                pctdistance=0.75,
+                textprops={"color": "#ffffff", "fontsize": 9, "fontweight": 600}
             )
-            for t in autotexts:
-                t.set_color("#ffffff")
-                t.set_fontweight(600)
-            ax2.set_title("Distribuição de Visualizações por Categoria", color="#dce6f0")
+            ax2.set_title("Distribuição de Visualizações", fontsize=12, pad=12, color="#e8eef5")
+            ax2.legend(
+                wedges, resumo["categoria"],
+                loc="center left", bbox_to_anchor=(1, 0.5),
+                frameon=False, fontsize=9,
+                labelcolor="#b0c8dd"
+            )
+            fig2.tight_layout()
             st.pyplot(fig2)
 
         st.dataframe(resumo, use_container_width=True, hide_index=True)
@@ -664,47 +679,46 @@ else:
 
         dias = engajamento_por_dia(df_filtered)
         fig3, ax3 = plt.subplots(figsize=(10, 5))
-        ax3.set_facecolor("#0d1a26")
         fig3.patch.set_facecolor("#0d1a26")
-        ax3.tick_params(colors="#8faabe")
-        ax3.spines["bottom"].set_color((1, 1, 1, 0.08))
-        ax3.spines["left"].set_color((1, 1, 1, 0.08))
-        ax3.spines["top"].set_visible(False)
-        ax3.spines["right"].set_visible(False)
-        ax3.xaxis.label.set_color("#8faabe")
-        ax3.yaxis.label.set_color("#8faabe")
-        ax3.title.set_color("#dce6f0")
-        ax3.plot(dias["dia_pt"], dias["media_engajamento"], marker="o", linewidth=2, color="#ff6b35",
-                 markerfacecolor="#ff4d4d", markeredgecolor="#ff4d4d", markersize=8)
-        ax3.set_xlabel("Dia da Semana")
-        ax3.set_ylabel("Engajamento Médio")
-        ax3.grid(True, alpha=0.1, color=(1, 1, 1, 0.08))
+        ax3 = style_ax(ax3)
+        ax3.plot(dias["dia_pt"], dias["media_engajamento"],
+                 marker="o", linewidth=2.5, color="#ff6b35",
+                 markerfacecolor="#ff4d4d", markeredgecolor="#ffffff",
+                 markeredgewidth=1.5, markersize=9)
+        for _, row in dias.iterrows():
+            ax3.annotate(f"{row['media_engajamento']:.0f}",
+                         xy=(row["dia_pt"], row["media_engajamento"]),
+                         xytext=(0, 10), textcoords="offset points",
+                         ha="center", va="bottom", fontsize=8,
+                         color="#b0c8dd", fontweight=500)
+        ax3.set_xlabel("Dia da Semana", fontsize=10, labelpad=10)
+        ax3.set_ylabel("Engajamento Médio", fontsize=10, labelpad=10)
+        ax3.set_title("Engajamento Médio por Dia da Semana", fontsize=12, pad=12)
         fig3.tight_layout()
         st.pyplot(fig3)
 
         st.subheader("Tendências das Categorias ao Longo do Tempo")
         tendencias = tendencias_categoria_ao_longo_tempo(df_filtered)
         if not tendencias.empty:
-            fig4, ax4 = plt.subplots(figsize=(12, 5))
-            ax4.set_facecolor("#0d1a26")
+            fig4, ax4 = plt.subplots(figsize=(12, 5.5))
             fig4.patch.set_facecolor("#0d1a26")
-            ax4.tick_params(colors="#8faabe")
-            ax4.spines["bottom"].set_color((1, 1, 1, 0.08))
-            ax4.spines["left"].set_color((1, 1, 1, 0.08))
-            ax4.spines["top"].set_visible(False)
-            ax4.spines["right"].set_visible(False)
-            ax4.xaxis.label.set_color("#8faabe")
-            ax4.yaxis.label.set_color("#8faabe")
-            ax4.legend(labelcolor="#c8d6e5", facecolor=(0.05, 0.1, 0.15, 0.8), edgecolor=(1, 1, 1, 0.08))
-            palette = sns.color_palette("magma", len(tendencias["categoria"].unique()))
+            ax4 = style_ax(ax4)
+            cores_linhas = ["#ff6b35", "#00bcd4", "#4ecdc4", "#ffd93d", "#ff4d4d", "#a78bfa", "#34d399"]
             for i, (cat, dados_cat) in enumerate(tendencias.groupby("categoria")):
+                cor = cores_linhas[i % len(cores_linhas)]
                 ax4.plot(dados_cat["mes_ano"], dados_cat["engajamento"],
-                         marker="o", label=cat, linewidth=2, color=palette[i],
-                         markerfacecolor=palette[i])
-            ax4.set_xlabel("Mês / Ano")
-            ax4.set_ylabel("Engajamento Total")
-            ax4.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
-            ax4.tick_params(axis="x", rotation=45)
+                         marker="o", label=cat, linewidth=2.5, color=cor,
+                         markerfacecolor=cor, markeredgecolor="none", markersize=7)
+            ax4.set_xlabel("Mês / Ano", fontsize=10, labelpad=10)
+            ax4.set_ylabel("Engajamento Total", fontsize=10, labelpad=10)
+            ax4.set_title("Tendências de Engajamento por Categoria", fontsize=12, pad=12)
+            ax4.legend(
+                loc="upper left", bbox_to_anchor=(1.01, 1),
+                frameon=True, facecolor=(0.08, 0.12, 0.18, 0.9),
+                edgecolor=(1, 1, 1, 0.08), fontsize=9,
+                labelcolor="#b0c8dd"
+            )
+            ax4.tick_params(axis="x", rotation=35, pad=6)
             fig4.tight_layout()
             st.pyplot(fig4)
 
