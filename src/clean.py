@@ -11,6 +11,8 @@ def clean_text(text):
 
 def clean_dataframe(df):
     df = df.copy()
+    df["titulo_original"] = df["titulo"]
+    df["descricao_original"] = df["descricao"]
     df["titulo"] = df["titulo"].apply(clean_text)
     df["descricao"] = df["descricao"].apply(clean_text)
     df["data_publicacao"] = pd.to_datetime(df["data_publicacao"], errors="coerce")
