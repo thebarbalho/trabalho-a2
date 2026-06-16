@@ -8,7 +8,7 @@ import seaborn as sns
 from src.clean import clean_dataframe
 from src.classify import classificar_dataframe
 from src.metrics import calcular_metricas, resumo_por_categoria, top_videos, extrair_tempo, engajamento_por_dia, tendencias_categoria_ao_longo_tempo
-from src.utils import save_dataframe, load_dataframe
+
 
 st.set_page_config(
     page_title="Analytics Esportivo - YouTube",
@@ -352,41 +352,25 @@ with st.sidebar:
     st.markdown('<div class="sidebar-title">Configuração</div>', unsafe_allow_html=True)
     st.markdown('<div class="divider-teal"></div>', unsafe_allow_html=True)
 
-    modo = st.radio("Fonte dos dados", ["Coletar da API", "Usar dados salvos"], label_visibility="collapsed")
+    st.markdown('<div class="sidebar-label">Tipo de busca</div>', unsafe_allow_html=True)
+    opcao_busca = st.radio("Busca", ["Palavra-chave única", "Múltiplas consultas"], label_visibility="collapsed")
 
-    if modo == "Coletar da API":
-        st.markdown('<div class="sidebar-label">Tipo de busca</div>', unsafe_allow_html=True)
-        opcao_busca = st.radio("Busca", ["Palavra-chave única", "Múltiplas consultas"], label_visibility="collapsed")
-
-        if opcao_busca == "Palavra-chave única":
-            st.markdown('<div class="sidebar-label">Palavra-chave</div>', unsafe_allow_html=True)
-            query = st.text_input("Palavra-chave", "futebol gols", label_visibility="collapsed")
-            st.markdown('<div class="sidebar-label">Quantidade de vídeos</div>', unsafe_allow_html=True)
-            max_results = st.slider("Quantidade de vídeos", 5, 50, 20, label_visibility="collapsed")
-        else:
-            st.markdown('<div class="sidebar-label">Consultas</div>', unsafe_allow_html=True)
-            queries_selecionadas = st.multiselect(
-                "Consultas", QUERIES_SUGERIDAS,
-                default=QUERIES_SUGERIDAS[:4],
-                label_visibility="collapsed"
-            )
-            st.markdown('<div class="sidebar-label">Vídeos por consulta</div>', unsafe_allow_html=True)
-            videos_por_query = st.slider("Vídeos por consulta", 10, 50, 25, label_visibility="collapsed")
-
-        coletar = st.button("🔍  Coletar Dados", type="primary", use_container_width=True)
+    if opcao_busca == "Palavra-chave única":
+        st.markdown('<div class="sidebar-label">Palavra-chave</div>', unsafe_allow_html=True)
+        query = st.text_input("Palavra-chave", "futebol gols", label_visibility="collapsed")
+        st.markdown('<div class="sidebar-label">Quantidade de vídeos</div>', unsafe_allow_html=True)
+        max_results = st.slider("Quantidade de vídeos", 5, 50, 20, label_visibility="collapsed")
     else:
-        arquivos = []
-        try:
-            from pathlib import Path
-            data_dir = Path(__file__).resolve().parent.parent / "data"
-            if data_dir.exists():
-                arquivos = [f.name for f in data_dir.glob("*.csv")]
-        except:
-            pass
-        st.markdown('<div class="sidebar-label">Arquivo</div>', unsafe_allow_html=True)
-        arquivo = st.selectbox("Arquivo", arquivos, label_visibility="collapsed") if arquivos else None
-        if arquivo:
-            carregar = st.button("📂  Carregar", type="primary", use_container_width=True)
+        st.markdown('<div class="sidebar-label">Consultas</div>', unsafe_allow_html=True)
+        queries_selecionadas = st.multiselect(
+            "Consultas", QUERIES_SUGERIDAS,
+            default=QUERIES_SUGERIDAS[:4],
+            label_visibility="collapsed"
+        )
+        st.markdown('<div class="sidebar-label">Vídeos por consulta</div>', unsafe_allow_html=True)
+        videos_por_query = st.slider("Vídeos por consulta", 10, 50, 25, label_visibility="collapsed")
+
+    coletar = st.button("🔍  Coletar Dados", type="primary", use_container_width=True)
 
     st.markdown("---")
     st.markdown(
@@ -399,7 +383,7 @@ if "df" not in st.session_state:
     st.session_state.df = None
     st.session_state.processado = None
 
-if modo == "Coletar da API" and coletar:
+if coletar:
     with st.spinner("Coletando dados da YouTube API..."):
         try:
             from src.collect import search_videos, collect_multiple_queries
@@ -415,17 +399,6 @@ if modo == "Coletar da API" and coletar:
                 st.success(f"{len(df_raw)} vídeos coletados com sucesso!")
         except Exception as e:
             st.error(f"Erro na coleta: {e}")
-
-elif modo == "Usar dados salvos":
-    if arquivo and carregar:
-        df_raw = load_dataframe(arquivo)
-        if df_raw is not None:
-            st.session_state.df = df_raw
-            st.success(f"Dados carregados: {len(df_raw)} vídeos")
-        else:
-            st.error("Arquivo não encontrado.")
-    elif not arquivos:
-        st.info("Nenhum dado salvo encontrado. Colete dados primeiro.")
 
 if st.session_state.df is None:
     st.markdown("""
@@ -480,49 +453,9 @@ else:
     else:
         df_filtered = df_analyze[df_analyze["categoria"].isin(categoria_filtro)]
 
-    abas = st.tabs(["Pesquisa Personalizada", "Visão Geral", "Por Categoria", "Análise Temporal", "Tabela de Dados"])
+    abas = st.tabs(["Visão Geral", "Por Categoria", "Análise Temporal", "Tabela de Dados"])
 
     with abas[0]:
-        st.markdown("### 🔍 Pesquisa por Palavra-chave")
-        col_input, col_btn = st.columns([4, 1])
-        with col_input:
-            termo = st.text_input("Digite uma palavra-chave e pressione Enter", key="termo_pesquisa")
-        with col_btn:
-            st.markdown("##")
-            buscar = st.button("🔍  Buscar", type="primary", use_container_width=True)
-
-        if (buscar or (termo and st.session_state.get("_ultimo_termo") != termo)) and termo.strip():
-            st.session_state._ultimo_termo = termo.strip()
-            with st.spinner("Coletando dados da YouTube API..."):
-                try:
-                    from src.collect import search_videos
-                    df_busca = search_videos(termo.strip(), max_results=20)
-                    if df_busca.empty:
-                        st.warning("Nenhum vídeo encontrado para essa palavra-chave.")
-                    else:
-                        st.session_state.df = df_busca
-                        st.success(f"{len(df_busca)} vídeos coletados!")
-                except Exception as e:
-                    st.error(f"Erro na coleta: {e}")
-
-        if st.session_state.df is not None:
-            c1, c2, c3 = st.columns(3)
-            with c1:
-                st.metric("Total de Vídeos", len(df_filtered))
-            with c2:
-                st.metric("Total de Visualizações", f"{df_filtered['visualizacoes'].sum():,}")
-            with c3:
-                media_taxa = df_filtered["taxa_engajamento"].mean()
-                st.metric("Taxa de Engajamento Média", f"{media_taxa:.2f}%")
-
-            st.dataframe(
-                df_filtered[["titulo", "canal", "categoria", "visualizacoes",
-                             "engajamento_total", "taxa_engajamento"]]
-                .sort_values("engajamento_total", ascending=False),
-                use_container_width=True, hide_index=True
-            )
-
-    with abas[1]:
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Total de Vídeos", len(df_filtered))
@@ -538,7 +471,7 @@ else:
         top10 = top_videos(df_filtered)
         st.dataframe(top10, use_container_width=True, hide_index=True)
 
-    with abas[2]:
+    with abas[1]:
         st.subheader("Resumo por Categoria")
         resumo = resumo_por_categoria(df_filtered)
         sns.set_style("darkgrid")
@@ -550,8 +483,8 @@ else:
             ax1.set_facecolor("#0d1a26")
             fig1.patch.set_facecolor("#0d1a26")
             ax1.tick_params(colors="#8faabe")
-            ax1.spines["bottom"].set_color("rgba(255,255,255,0.08)")
-            ax1.spines["left"].set_color("rgba(255,255,255,0.08)")
+            ax1.spines["bottom"].set_color((1, 1, 1, 0.08))
+            ax1.spines["left"].set_color((1, 1, 1, 0.08))
             ax1.spines["top"].set_visible(False)
             ax1.spines["right"].set_visible(False)
             ax1.xaxis.label.set_color("#8faabe")
@@ -588,7 +521,7 @@ else:
 
         st.dataframe(resumo, use_container_width=True, hide_index=True)
 
-    with abas[3]:
+    with abas[2]:
         st.subheader("Engajamento por Dia da Semana")
 
         dias = engajamento_por_dia(df_filtered)
@@ -596,8 +529,8 @@ else:
         ax3.set_facecolor("#0d1a26")
         fig3.patch.set_facecolor("#0d1a26")
         ax3.tick_params(colors="#8faabe")
-        ax3.spines["bottom"].set_color("rgba(255,255,255,0.08)")
-        ax3.spines["left"].set_color("rgba(255,255,255,0.08)")
+        ax3.spines["bottom"].set_color((1, 1, 1, 0.08))
+        ax3.spines["left"].set_color((1, 1, 1, 0.08))
         ax3.spines["top"].set_visible(False)
         ax3.spines["right"].set_visible(False)
         ax3.xaxis.label.set_color("#8faabe")
@@ -607,7 +540,7 @@ else:
                  markerfacecolor="#ff4d4d", markeredgecolor="#ff4d4d", markersize=8)
         ax3.set_xlabel("Dia da Semana")
         ax3.set_ylabel("Engajamento Médio")
-        ax3.grid(True, alpha=0.1, color="rgba(255,255,255,0.08)")
+        ax3.grid(True, alpha=0.1, color=(1, 1, 1, 0.08))
         fig3.tight_layout()
         st.pyplot(fig3)
 
@@ -618,13 +551,13 @@ else:
             ax4.set_facecolor("#0d1a26")
             fig4.patch.set_facecolor("#0d1a26")
             ax4.tick_params(colors="#8faabe")
-            ax4.spines["bottom"].set_color("rgba(255,255,255,0.08)")
-            ax4.spines["left"].set_color("rgba(255,255,255,0.08)")
+            ax4.spines["bottom"].set_color((1, 1, 1, 0.08))
+            ax4.spines["left"].set_color((1, 1, 1, 0.08))
             ax4.spines["top"].set_visible(False)
             ax4.spines["right"].set_visible(False)
             ax4.xaxis.label.set_color("#8faabe")
             ax4.yaxis.label.set_color("#8faabe")
-            ax4.legend(labelcolor="#c8d6e5", facecolor="rgba(13,26,38,0.8)", edgecolor="rgba(255,255,255,0.08)")
+            ax4.legend(labelcolor="#c8d6e5", facecolor=(0.05, 0.1, 0.15, 0.8), edgecolor=(1, 1, 1, 0.08))
             palette = sns.color_palette("magma", len(tendencias["categoria"].unique()))
             for i, (cat, dados_cat) in enumerate(tendencias.groupby("categoria")):
                 ax4.plot(dados_cat["mes_ano"], dados_cat["engajamento"],
@@ -637,7 +570,7 @@ else:
             fig4.tight_layout()
             st.pyplot(fig4)
 
-    with abas[4]:
+    with abas[3]:
         colunas_exibir = ["titulo", "canal", "categoria", "visualizacoes",
                           "curtidas", "comentarios", "engajamento_total",
                           "taxa_engajamento", "data_publicacao"]
