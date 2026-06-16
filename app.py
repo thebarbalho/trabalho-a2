@@ -1,4 +1,3 @@
-import html
 import importlib
 import matplotlib
 matplotlib.use('Agg')
@@ -460,7 +459,7 @@ def youtube_url(video_id):
 def safe(val):
     if not isinstance(val, str):
         val = str(val)
-    return val.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&#x27;").replace("{", "{{").replace("}", "}}")
+    return val.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&#x27;")
 
 COL_LABELS = {
     "titulo": "Título", "titulo_original": "Título Original",
@@ -628,7 +627,7 @@ else:
             st.dataframe(top10, use_container_width=True, hide_index=True)
         else:
             cards_html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">'
-            for idx, (_, row) in enumerate(top10.iterrows(), 1):
+            for idx, (_, row) in top10.iterrows():
                 url = youtube_url(row["video_id"])
                 views = f"{row['visualizacoes']:,.0f}"
                 eng = f"{row['engajamento_total']:,.0f}"
@@ -637,7 +636,7 @@ else:
                 canal = safe(row.get("canal", ""))
                 cards_html += f"""
                     <div class="video-card">
-                        <div class="rank">#{idx} — {categoria}</div>
+                        <div class="rank">#{idx + 1} — {categoria}</div>
                         <div class="title"><a href="{url}" target="_blank">{titulo_exibir}</a></div>
                         <div class="channel">{canal}</div>
                         <div class="meta">
@@ -648,7 +647,10 @@ else:
                     </div>
                 """
             cards_html += "</div>"
-            st.markdown(cards_html, unsafe_allow_html=True)
+            try:
+                st.markdown(cards_html, unsafe_allow_html=True)
+            except Exception as e:
+                st.dataframe(top10, use_container_width=True, hide_index=True)
 
     with abas[1]:
         st.subheader("Resumo por Categoria")
@@ -755,9 +757,9 @@ else:
                           "engajamento_total", "taxa_engajamento", "data_publicacao"]
         colunas_exibir = [c for c in colunas_exibir if c in df_filtered.columns]
         df_tabela = df_filtered[colunas_exibir].sort_values("engajamento_total", ascending=False)
-        if "video_id" in df_tabela.columns and ("titulo" in df_tabela.columns or "titulo_original" in df_tabela.columns):
+        try:
             st.markdown(html_video_table(df_tabela, colunas_exibir), unsafe_allow_html=True)
-        else:
+        except Exception:
             st.dataframe(df_tabela, use_container_width=True, hide_index=True)
 
         csv = df_filtered.to_csv(index=False, encoding="utf-8")
