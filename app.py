@@ -476,19 +476,25 @@ def style_ax(ax):
     return ax
 
 def html_video_table(df, columns):
-    cols = [c for c in columns if c != "video_id" and c in df.columns]
+    cols = [c for c in columns if c in df.columns]
     has_link = "video_id" in df.columns and ("titulo" in cols or "titulo_original" in cols)
     titulo_col = "titulo_original" if "titulo_original" in cols else "titulo" if "titulo" in cols else None
     html = '<table class="video-link-table"><thead><tr>'
     for c in cols:
-        label = "Título" if c == "titulo_original" else COL_LABELS.get(c, c)
-        html += f"<th>{label}</th>"
+        if c == "video_id":
+            html += "<th>Link</th>"
+        else:
+            label = "Título" if c == "titulo_original" else COL_LABELS.get(c, c)
+            html += f"<th>{label}</th>"
     html += '</tr></thead><tbody>'
     for _, row in df.iterrows():
         html += "<tr>"
         for c in cols:
             val = row[c]
-            if c in ("titulo", "titulo_original") and has_link and titulo_col:
+            if c == "video_id":
+                url = youtube_url(val)
+                html += f'<td><a href="{url}" target="_blank" style="color:#ff6b35;font-weight:600;text-decoration:none;">▶ YouTube</a></td>'
+            elif c in ("titulo", "titulo_original") and has_link and titulo_col:
                 url = youtube_url(row["video_id"])
                 titulo = row[titulo_col]
                 html += f'<td><a href="{url}" target="_blank">{titulo}</a> <a href="{url}" target="_blank" style="color:#ff6b35;font-size:0.7rem;font-weight:600;text-decoration:none;margin-left:6px;white-space:nowrap;">▶ Assistir</a></td>'
@@ -507,7 +513,7 @@ with st.sidebar:
     st.markdown('<div class="sidebar-label">Palavra-chave</div>', unsafe_allow_html=True)
     query = st.text_input("Palavra-chave", "futebol gols", label_visibility="collapsed")
     st.markdown('<div class="sidebar-label">Quantidade de vídeos</div>', unsafe_allow_html=True)
-    max_results = st.slider("Quantidade de vídeos", 5, 50, 20, label_visibility="collapsed")
+    max_results = st.slider("Quantidade de vídeos", 5, 10, 10, label_visibility="collapsed")
 
     coletar = st.button("🔍  Coletar Dados", type="primary", use_container_width=True)
 
