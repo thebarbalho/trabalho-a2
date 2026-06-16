@@ -336,6 +336,115 @@ CUSTOM_CSS = """
         margin: 0.75rem 0 1.5rem 0;
         border: none;
     }
+
+    .video-card {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 14px;
+        padding: 1.2rem 1rem;
+        height: 100%;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+
+    .video-card:hover {
+        border-color: rgba(0, 188, 212, 0.2);
+        background: rgba(255,255,255,0.06);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+
+    .video-card .rank {
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: #4a667a;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+
+    .video-card .title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .video-card .title a {
+        color: #e8eef5;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .video-card .title a:hover {
+        color: #ff6b35;
+        text-decoration: underline;
+    }
+
+    .video-card .meta {
+        font-size: 0.72rem;
+        color: #6a8aa0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin-top: auto;
+    }
+
+    .video-card .meta span {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .video-card .channel {
+        font-size: 0.72rem;
+        color: #8faabe;
+    }
+
+    .video-link-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.8rem;
+    }
+
+    .video-link-table thead th {
+        background: rgba(0, 188, 212, 0.12);
+        color: #00bcd4;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 0.7rem 0.8rem;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .video-link-table tbody td {
+        color: #c8d6e5;
+        padding: 0.6rem 0.8rem;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .video-link-table tbody tr:hover td {
+        background: rgba(255,255,255,0.03);
+    }
+
+    .video-link-table a {
+        color: #e8eef5;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s ease;
+    }
+
+    .video-link-table a:hover {
+        color: #ff6b35;
+        text-decoration: underline;
+    }
 </style>
 """
 
@@ -347,6 +456,38 @@ QUERIES_SUGERIDAS = [
     "futebol americano touchdown", "memes esportes", "debate esportivo",
     "esportes radicais"
 ]
+
+def youtube_url(video_id):
+    return f"https://www.youtube.com/watch?v={video_id}"
+
+COL_LABELS = {
+    "titulo": "Título", "canal": "Canal", "categoria": "Categoria",
+    "visualizacoes": "Visualizações", "curtidas": "Curtidas",
+    "comentarios": "Comentários", "engajamento_total": "Eng. Total",
+    "taxa_engajamento": "Tx. Engajamento", "data_publicacao": "Publicação"
+}
+
+def html_video_table(df, columns):
+    cols = [c for c in columns if c != "video_id" and c in df.columns]
+    has_link = "video_id" in df.columns and "titulo" in cols
+    html = '<table class="video-link-table"><thead><tr>'
+    for c in cols:
+        html += f"<th>{COL_LABELS.get(c, c)}</th>"
+    html += '</tr></thead><tbody>'
+    for _, row in df.iterrows():
+        html += "<tr>"
+        for c in cols:
+            val = row[c]
+            if c == "titulo" and has_link:
+                url = youtube_url(row["video_id"])
+                html += f'<td><a href="{url}" target="_blank">{val}</a></td>'
+            elif isinstance(val, (int, float)):
+                html += f"<td>{val:,.0f}</td>" if abs(val) >= 1000 else f"<td>{val}</td>"
+            else:
+                html += f"<td>{val}</td>"
+        html += "</tr>"
+    html += "</tbody></table>"
+    return html
 
 with st.sidebar:
     st.markdown('<div class="sidebar-title">Configuração</div>', unsafe_allow_html=True)
@@ -469,7 +610,24 @@ else:
 
         st.markdown("### Top 10 Vídeos por Engajamento")
         top10 = top_videos(df_filtered)
-        st.dataframe(top10, use_container_width=True, hide_index=True)
+        cards_html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">'
+        for idx, (_, row) in enumerate(top10.iterrows(), 1):
+            url = youtube_url(row["video_id"])
+            views = f"{row['visualizacoes']:,.0f}"
+            eng = f"{row['engajamento_total']:,.0f}"
+            cards_html += f"""
+                <div class="video-card">
+                    <div class="rank">#{idx} — {row['categoria']}</div>
+                    <div class="title"><a href="{url}" target="_blank">{row['titulo']}</a></div>
+                    <div class="channel">{row['canal']}</div>
+                    <div class="meta">
+                        <span>👁️ {views}</span>
+                        <span>⚡ {eng}</span>
+                    </div>
+                </div>
+            """
+        cards_html += "</div>"
+        st.markdown(cards_html, unsafe_allow_html=True)
 
     with abas[1]:
         st.subheader("Resumo por Categoria")
@@ -571,15 +729,12 @@ else:
             st.pyplot(fig4)
 
     with abas[3]:
-        colunas_exibir = ["titulo", "canal", "categoria", "visualizacoes",
+        colunas_exibir = ["video_id", "titulo", "canal", "categoria", "visualizacoes",
                           "curtidas", "comentarios", "engajamento_total",
                           "taxa_engajamento", "data_publicacao"]
         colunas_exibir = [c for c in colunas_exibir if c in df_filtered.columns]
-        st.dataframe(
-            df_filtered[colunas_exibir].sort_values("engajamento_total", ascending=False),
-            use_container_width=True,
-            hide_index=True
-        )
+        df_tabela = df_filtered[colunas_exibir].sort_values("engajamento_total", ascending=False)
+        st.markdown(html_video_table(df_tabela, colunas_exibir), unsafe_allow_html=True)
 
         csv = df_filtered.to_csv(index=False, encoding="utf-8")
         st.download_button(
