@@ -454,7 +454,9 @@ def youtube_url(video_id):
     return f"https://www.youtube.com/watch?v={video_id}"
 
 COL_LABELS = {
-    "titulo": "Título", "canal": "Canal", "categoria": "Categoria",
+    "titulo": "Título", "titulo_original": "Título Original",
+    "canal": "Canal", "categoria": "Categoria",
+    "tags": "Tags", "category_id_nativo": "Categ. YouTube",
     "visualizacoes": "Visualizações", "curtidas": "Curtidas",
     "comentarios": "Comentários", "engajamento_total": "Eng. Total",
     "taxa_engajamento": "Tx. Engajamento", "data_publicacao": "Publicação"
@@ -475,18 +477,21 @@ def style_ax(ax):
 
 def html_video_table(df, columns):
     cols = [c for c in columns if c != "video_id" and c in df.columns]
-    has_link = "video_id" in df.columns and "titulo" in cols
+    has_link = "video_id" in df.columns and ("titulo" in cols or "titulo_original" in cols)
+    titulo_col = "titulo_original" if "titulo_original" in cols else "titulo" if "titulo" in cols else None
     html = '<table class="video-link-table"><thead><tr>'
     for c in cols:
-        html += f"<th>{COL_LABELS.get(c, c)}</th>"
+        label = "Título" if c == "titulo_original" else COL_LABELS.get(c, c)
+        html += f"<th>{label}</th>"
     html += '</tr></thead><tbody>'
     for _, row in df.iterrows():
         html += "<tr>"
         for c in cols:
             val = row[c]
-            if c == "titulo" and has_link:
+            if c in ("titulo", "titulo_original") and has_link and titulo_col:
                 url = youtube_url(row["video_id"])
-                html += f'<td><a href="{url}" target="_blank">{val}</a> <a href="{url}" target="_blank" style="color:#ff6b35;font-size:0.7rem;font-weight:600;text-decoration:none;margin-left:6px;white-space:nowrap;">▶ Assistir</a></td>'
+                titulo = row[titulo_col]
+                html += f'<td><a href="{url}" target="_blank">{titulo}</a> <a href="{url}" target="_blank" style="color:#ff6b35;font-size:0.7rem;font-weight:600;text-decoration:none;margin-left:6px;white-space:nowrap;">▶ Assistir</a></td>'
             elif isinstance(val, (int, float)):
                 html += f"<td>{val:,.0f}</td>" if abs(val) >= 1000 else f"<td>{val}</td>"
             else:
@@ -608,10 +613,11 @@ else:
                 url = youtube_url(row["video_id"])
                 views = f"{row['visualizacoes']:,.0f}"
                 eng = f"{row['engajamento_total']:,.0f}"
+                titulo_exibir = row.get("titulo_original", row.get("titulo", ""))
                 cards_html += f"""
                     <div class="video-card">
                         <div class="rank">#{idx} — {row['categoria']}</div>
-                        <div class="title"><a href="{url}" target="_blank">{row['titulo']}</a></div>
+                        <div class="title"><a href="{url}" target="_blank">{titulo_exibir}</a></div>
                         <div class="channel">{row['canal']}</div>
                         <div class="meta">
                             <span>👁️ {views}</span>
@@ -723,12 +729,12 @@ else:
             st.pyplot(fig4)
 
     with abas[3]:
-        colunas_exibir = ["video_id", "titulo", "canal", "categoria", "visualizacoes",
-                          "curtidas", "comentarios", "engajamento_total",
-                          "taxa_engajamento", "data_publicacao"]
+        colunas_exibir = ["video_id", "titulo_original", "canal", "categoria", "tags",
+                          "visualizacoes", "curtidas", "comentarios",
+                          "engajamento_total", "taxa_engajamento", "data_publicacao"]
         colunas_exibir = [c for c in colunas_exibir if c in df_filtered.columns]
         df_tabela = df_filtered[colunas_exibir].sort_values("engajamento_total", ascending=False)
-        if "video_id" in df_tabela.columns and "titulo" in df_tabela.columns:
+        if "video_id" in df_tabela.columns and ("titulo" in df_tabela.columns or "titulo_original" in df_tabela.columns):
             st.markdown(html_video_table(df_tabela, colunas_exibir), unsafe_allow_html=True)
         else:
             st.dataframe(df_tabela, use_container_width=True, hide_index=True)
