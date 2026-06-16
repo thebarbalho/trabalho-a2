@@ -1,3 +1,5 @@
+import html
+import importlib
 import matplotlib
 matplotlib.use('Agg')
 
@@ -6,6 +8,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from src.clean import clean_dataframe
+import src.classify
+importlib.reload(src.classify)
 from src.classify import classificar_dataframe
 from src.metrics import calcular_metricas, resumo_por_categoria, top_videos, extrair_tempo, engajamento_por_dia, tendencias_categoria_ao_longo_tempo
 
@@ -453,6 +457,11 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 def youtube_url(video_id):
     return f"https://www.youtube.com/watch?v={video_id}"
 
+def safe(val):
+    if not isinstance(val, str):
+        val = str(val)
+    return val.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&#x27;").replace("{", "{{").replace("}", "}}")
+
 COL_LABELS = {
     "titulo": "Título", "titulo_original": "Título Original",
     "canal": "Canal", "categoria": "Categoria",
@@ -479,32 +488,32 @@ def html_video_table(df, columns):
     cols = [c for c in columns if c in df.columns]
     has_link = "video_id" in df.columns and ("titulo" in cols or "titulo_original" in cols)
     titulo_col = "titulo_original" if "titulo_original" in cols else "titulo" if "titulo" in cols else None
-    html = '<table class="video-link-table"><thead><tr>'
+    out = '<table class="video-link-table"><thead><tr>'
     for c in cols:
         if c == "video_id":
-            html += "<th>Link</th>"
+            out += "<th>Link</th>"
         else:
             label = "Título" if c == "titulo_original" else COL_LABELS.get(c, c)
-            html += f"<th>{label}</th>"
-    html += '</tr></thead><tbody>'
+            out += f"<th>{label}</th>"
+    out += '</tr></thead><tbody>'
     for _, row in df.iterrows():
-        html += "<tr>"
+        out += "<tr>"
         for c in cols:
             val = row[c]
             if c == "video_id":
                 url = youtube_url(val)
-                html += f'<td><a href="{url}" target="_blank" style="color:#ff6b35;font-weight:600;text-decoration:none;">▶ YouTube</a></td>'
+                out += f'<td><a href="{url}" target="_blank" style="color:#ff6b35;font-weight:600;text-decoration:none;">▶ YouTube</a></td>'
             elif c in ("titulo", "titulo_original") and has_link and titulo_col:
                 url = youtube_url(row["video_id"])
-                titulo = row[titulo_col]
-                html += f'<td><a href="{url}" target="_blank">{titulo}</a> <a href="{url}" target="_blank" style="color:#ff6b35;font-size:0.7rem;font-weight:600;text-decoration:none;margin-left:6px;white-space:nowrap;">▶ Assistir</a></td>'
+                titulo = safe(row[titulo_col])
+                out += f'<td><a href="{url}" target="_blank">{titulo}</a> <a href="{url}" target="_blank" style="color:#ff6b35;font-size:0.7rem;font-weight:600;text-decoration:none;margin-left:6px;white-space:nowrap;">▶ Assistir</a></td>'
             elif isinstance(val, (int, float)):
-                html += f"<td>{val:,.0f}</td>" if abs(val) >= 1000 else f"<td>{val}</td>"
+                out += f"<td>{val:,.0f}</td>" if abs(val) >= 1000 else f"<td>{val}</td>"
             else:
-                html += f"<td>{val}</td>"
-        html += "</tr>"
-    html += "</tbody></table>"
-    return html
+                out += f"<td>{safe(val)}</td>"
+        out += "</tr>"
+    out += "</tbody></table>"
+    return out
 
 with st.sidebar:
     st.markdown('<div class="sidebar-title">Configuração</div>', unsafe_allow_html=True)
@@ -576,10 +585,14 @@ if st.session_state.df is None:
 else:
     df_raw = st.session_state.df
 
-    df_clean = clean_dataframe(df_raw)
-    df_class = classificar_dataframe(df_clean)
-    df_metrics = calcular_metricas(df_class)
-    df_analyze = extrair_tempo(df_metrics)
+    try:
+        df_clean = clean_dataframe(df_raw)
+        df_class = classificar_dataframe(df_clean)
+        df_metrics = calcular_metricas(df_class)
+        df_analyze = extrair_tempo(df_metrics)
+    except Exception as e:
+        st.error(f"Erro ao processar dados: {e}")
+        st.stop()
 
     st.session_state.processado = df_analyze
 
@@ -619,12 +632,14 @@ else:
                 url = youtube_url(row["video_id"])
                 views = f"{row['visualizacoes']:,.0f}"
                 eng = f"{row['engajamento_total']:,.0f}"
-                titulo_exibir = row.get("titulo_original", row.get("titulo", ""))
+                titulo_exibir = safe(row.get("titulo_original", row.get("titulo", "")))
+                categoria = safe(row.get("categoria", ""))
+                canal = safe(row.get("canal", ""))
                 cards_html += f"""
                     <div class="video-card">
-                        <div class="rank">#{idx} — {row['categoria']}</div>
+                        <div class="rank">#{idx} — {categoria}</div>
                         <div class="title"><a href="{url}" target="_blank">{titulo_exibir}</a></div>
-                        <div class="channel">{row['canal']}</div>
+                        <div class="channel">{canal}</div>
                         <div class="meta">
                             <span>👁️ {views}</span>
                             <span>⚡ {eng}</span>
