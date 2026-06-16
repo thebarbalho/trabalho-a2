@@ -450,13 +450,6 @@ CUSTOM_CSS = """
 
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
-QUERIES_SUGERIDAS = [
-    "esportes melhores momentos", "análise esportiva", "humor esportivo",
-    "notícias esportivas", "futebol gols", "basquete cestas",
-    "futebol americano touchdown", "memes esportes", "debate esportivo",
-    "esportes radicais"
-]
-
 def youtube_url(video_id):
     return f"https://www.youtube.com/watch?v={video_id}"
 
@@ -493,23 +486,10 @@ with st.sidebar:
     st.markdown('<div class="sidebar-title">Configuração</div>', unsafe_allow_html=True)
     st.markdown('<div class="divider-teal"></div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="sidebar-label">Tipo de busca</div>', unsafe_allow_html=True)
-    opcao_busca = st.radio("Busca", ["Palavra-chave única", "Múltiplas consultas"], label_visibility="collapsed")
-
-    if opcao_busca == "Palavra-chave única":
-        st.markdown('<div class="sidebar-label">Palavra-chave</div>', unsafe_allow_html=True)
-        query = st.text_input("Palavra-chave", "futebol gols", label_visibility="collapsed")
-        st.markdown('<div class="sidebar-label">Quantidade de vídeos</div>', unsafe_allow_html=True)
-        max_results = st.slider("Quantidade de vídeos", 5, 50, 20, label_visibility="collapsed")
-    else:
-        st.markdown('<div class="sidebar-label">Consultas</div>', unsafe_allow_html=True)
-        queries_selecionadas = st.multiselect(
-            "Consultas", QUERIES_SUGERIDAS,
-            default=QUERIES_SUGERIDAS[:4],
-            label_visibility="collapsed"
-        )
-        st.markdown('<div class="sidebar-label">Vídeos por consulta</div>', unsafe_allow_html=True)
-        videos_por_query = st.slider("Vídeos por consulta", 10, 50, 25, label_visibility="collapsed")
+    st.markdown('<div class="sidebar-label">Palavra-chave</div>', unsafe_allow_html=True)
+    query = st.text_input("Palavra-chave", "futebol gols", label_visibility="collapsed")
+    st.markdown('<div class="sidebar-label">Quantidade de vídeos</div>', unsafe_allow_html=True)
+    max_results = st.slider("Quantidade de vídeos", 5, 50, 20, label_visibility="collapsed")
 
     coletar = st.button("🔍  Coletar Dados", type="primary", use_container_width=True)
 
@@ -527,11 +507,8 @@ if "df" not in st.session_state:
 if coletar:
     with st.spinner("Coletando dados da YouTube API..."):
         try:
-            from src.collect import search_videos, collect_multiple_queries
-            if opcao_busca == "Palavra-chave única":
-                df_raw = search_videos(query, max_results=max_results)
-            else:
-                df_raw = collect_multiple_queries(queries_selecionadas, videos_per_query=videos_por_query)
+            from src.collect import search_videos
+            df_raw = search_videos(query, max_results=max_results)
 
             if df_raw.empty:
                 st.error("Nenhum vídeo encontrado. Tente outras palavras-chave.")
@@ -610,24 +587,27 @@ else:
 
         st.markdown("### Top 10 Vídeos por Engajamento")
         top10 = top_videos(df_filtered)
-        cards_html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">'
-        for idx, (_, row) in enumerate(top10.iterrows(), 1):
-            url = youtube_url(row["video_id"])
-            views = f"{row['visualizacoes']:,.0f}"
-            eng = f"{row['engajamento_total']:,.0f}"
-            cards_html += f"""
-                <div class="video-card">
-                    <div class="rank">#{idx} — {row['categoria']}</div>
-                    <div class="title"><a href="{url}" target="_blank">{row['titulo']}</a></div>
-                    <div class="channel">{row['canal']}</div>
-                    <div class="meta">
-                        <span>👁️ {views}</span>
-                        <span>⚡ {eng}</span>
+        if "video_id" not in top10.columns:
+            st.dataframe(top10, use_container_width=True, hide_index=True)
+        else:
+            cards_html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">'
+            for idx, (_, row) in enumerate(top10.iterrows(), 1):
+                url = youtube_url(row["video_id"])
+                views = f"{row['visualizacoes']:,.0f}"
+                eng = f"{row['engajamento_total']:,.0f}"
+                cards_html += f"""
+                    <div class="video-card">
+                        <div class="rank">#{idx} — {row['categoria']}</div>
+                        <div class="title"><a href="{url}" target="_blank">{row['titulo']}</a></div>
+                        <div class="channel">{row['canal']}</div>
+                        <div class="meta">
+                            <span>👁️ {views}</span>
+                            <span>⚡ {eng}</span>
+                        </div>
                     </div>
-                </div>
-            """
-        cards_html += "</div>"
-        st.markdown(cards_html, unsafe_allow_html=True)
+                """
+            cards_html += "</div>"
+            st.markdown(cards_html, unsafe_allow_html=True)
 
     with abas[1]:
         st.subheader("Resumo por Categoria")
@@ -734,7 +714,10 @@ else:
                           "taxa_engajamento", "data_publicacao"]
         colunas_exibir = [c for c in colunas_exibir if c in df_filtered.columns]
         df_tabela = df_filtered[colunas_exibir].sort_values("engajamento_total", ascending=False)
-        st.markdown(html_video_table(df_tabela, colunas_exibir), unsafe_allow_html=True)
+        if "video_id" in df_tabela.columns and "titulo" in df_tabela.columns:
+            st.markdown(html_video_table(df_tabela, colunas_exibir), unsafe_allow_html=True)
+        else:
+            st.dataframe(df_tabela, use_container_width=True, hide_index=True)
 
         csv = df_filtered.to_csv(index=False, encoding="utf-8")
         st.download_button(
