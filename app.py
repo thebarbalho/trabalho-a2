@@ -627,7 +627,7 @@ else:
             st.dataframe(top10, use_container_width=True, hide_index=True)
         else:
             cards_html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">'
-            for idx, (_, row) in top10.iterrows():
+            for rank, (_, row) in enumerate(top10.iterrows(), start=1):
                 url = youtube_url(row["video_id"])
                 views = f"{row['visualizacoes']:,.0f}"
                 eng = f"{row['engajamento_total']:,.0f}"
@@ -636,7 +636,7 @@ else:
                 canal = safe(row.get("canal", ""))
                 cards_html += f"""
                     <div class="video-card">
-                        <div class="rank">#{idx + 1} — {categoria}</div>
+                        <div class="rank">#{rank} — {categoria}</div>
                         <div class="title"><a href="{url}" target="_blank">{titulo_exibir}</a></div>
                         <div class="channel">{canal}</div>
                         <div class="meta">
