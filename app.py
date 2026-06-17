@@ -627,37 +627,22 @@ else:
             if "video_id" not in top10.columns:
                 st.dataframe(top10, use_container_width=True, hide_index=True)
             else:
-                cards_html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">'
                 for rank, (_, row) in enumerate(top10.iterrows(), start=1):
-                    try:
-                        row_id = row.get("video_id", "")
-                        row_views = row.get("visualizacoes", 0)
-                        row_eng = row.get("engajamento_total", 0)
-                        v = f"{row_views:,.0f}" if isinstance(row_views, (int, float)) else str(row_views)
-                        e = f"{row_eng:,.0f}" if isinstance(row_eng, (int, float)) else str(row_eng)
-                        t = safe(str(row.get("titulo_original", row.get("titulo", ""))))
-                        c = safe(str(row.get("categoria", "")))
-                        ch = safe(str(row.get("canal", "")))
-                        u = youtube_url(row_id)
-                        cards_html += f"""
-                            <div class="video-card">
-                                <div class="rank">#{rank} — {c}</div>
-                                <div class="title"><a href="{u}" target="_blank">{t}</a></div>
-                                <div class="channel">{ch}</div>
-                                <div class="meta">
-                                    <span>👁️ {v}</span>
-                                    <span>⚡ {e}</span>
-                                    <span style="margin-left:auto;"><a href="{u}" target="_blank" style="color:#ff6b35;font-weight:600;text-decoration:none;font-size:0.75rem;">▶ Assistir</a></span>
-                                </div>
-                            </div>
-                        """
-                    except Exception:
-                        continue
-                cards_html += "</div>"
-                try:
-                    st.markdown(cards_html, unsafe_allow_html=True)
-                except Exception:
-                    st.dataframe(top10, use_container_width=True, hide_index=True)
+                    vid = str(row.get("video_id", ""))
+                    url = f"https://www.youtube.com/watch?v={vid}"
+                    views = int(row.get("visualizacoes", 0))
+                    eng = int(row.get("engajamento_total", 0))
+                    titulo = str(row.get("titulo_original", row.get("titulo", "")))
+                    categoria = str(row.get("categoria", ""))
+                    canal = str(row.get("canal", ""))
+                    st.markdown(
+                        f"**#{rank} — {categoria}**  \n"
+                        f"[{titulo}]({url})  \n"
+                        f"{canal}  \n"
+                        f"👁️ {views:,}  ⚡ {eng:,}  "
+                        f"[▶ Assistir]({url})"
+                    )
+                    st.divider()
 
         with abas[1]:
             try:
