@@ -628,136 +628,148 @@ else:
         else:
             cards_html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">'
             for rank, (_, row) in enumerate(top10.iterrows(), start=1):
-                url = youtube_url(row["video_id"])
-                views = f"{row['visualizacoes']:,.0f}"
-                eng = f"{row['engajamento_total']:,.0f}"
-                titulo_exibir = safe(row.get("titulo_original", row.get("titulo", "")))
-                categoria = safe(row.get("categoria", ""))
-                canal = safe(row.get("canal", ""))
-                cards_html += f"""
-                    <div class="video-card">
-                        <div class="rank">#{rank} — {categoria}</div>
-                        <div class="title"><a href="{url}" target="_blank">{titulo_exibir}</a></div>
-                        <div class="channel">{canal}</div>
-                        <div class="meta">
-                            <span>👁️ {views}</span>
-                            <span>⚡ {eng}</span>
-                            <span style="margin-left:auto;"><a href="{url}" target="_blank" style="color:#ff6b35;font-weight:600;text-decoration:none;font-size:0.75rem;">▶ Assistir</a></span>
+                try:
+                    row_id = row.get("video_id", "")
+                    row_views = row.get("visualizacoes", 0)
+                    row_eng = row.get("engajamento_total", 0)
+                    v = f"{row_views:,.0f}" if isinstance(row_views, (int, float)) else str(row_views)
+                    e = f"{row_eng:,.0f}" if isinstance(row_eng, (int, float)) else str(row_eng)
+                    t = safe(str(row.get("titulo_original", row.get("titulo", ""))))
+                    c = safe(str(row.get("categoria", "")))
+                    ch = safe(str(row.get("canal", "")))
+                    u = youtube_url(row_id)
+                    cards_html += f"""
+                        <div class="video-card">
+                            <div class="rank">#{rank} — {c}</div>
+                            <div class="title"><a href="{u}" target="_blank">{t}</a></div>
+                            <div class="channel">{ch}</div>
+                            <div class="meta">
+                                <span>👁️ {v}</span>
+                                <span>⚡ {e}</span>
+                                <span style="margin-left:auto;"><a href="{u}" target="_blank" style="color:#ff6b35;font-weight:600;text-decoration:none;font-size:0.75rem;">▶ Assistir</a></span>
+                            </div>
                         </div>
-                    </div>
-                """
+                    """
+                except Exception:
+                    continue
             cards_html += "</div>"
             try:
                 st.markdown(cards_html, unsafe_allow_html=True)
-            except Exception as e:
+            except Exception:
                 st.dataframe(top10, use_container_width=True, hide_index=True)
 
     with abas[1]:
-        st.subheader("Resumo por Categoria")
-        resumo = resumo_por_categoria(df_filtered)
-        sns.set_style("darkgrid")
+        try:
+            st.subheader("Resumo por Categoria")
+            resumo = resumo_por_categoria(df_filtered)
+            sns.set_style("darkgrid")
 
-        col_a, col_b = st.columns(2)
+            col_a, col_b = st.columns(2)
 
-        with col_a:
-            fig1, ax1 = plt.subplots(figsize=(10, 5.5))
-            fig1.patch.set_facecolor("#0d1a26")
-            ax1 = style_ax(ax1)
-            cores_bar = ["#ff6b35", "#ff8c5a", "#ffa07a", "#ffb89a", "#ffd0ba"]
-            bars = ax1.bar(resumo["categoria"], resumo["engajamento_medio"],
-                           color=cores_bar[:len(resumo)], edgecolor="none", width=0.65)
-            ax1.set_xlabel("Categoria", fontsize=10, labelpad=10)
-            ax1.set_ylabel("Engajamento Médio", fontsize=10, labelpad=10)
-            ax1.tick_params(axis="x", rotation=30, pad=6)
-            ax1.set_title("Engajamento Médio por Categoria", fontsize=12, pad=12)
-            for bar in bars:
-                height = bar.get_height()
-                ax1.text(bar.get_x() + bar.get_width() / 2., height - height * 0.05,
-                         f"{height:.0f}", ha="center", va="top", color="#ffffff",
-                         fontsize=9, fontweight=600)
-            fig1.tight_layout()
-            st.pyplot(fig1)
+            with col_a:
+                fig1, ax1 = plt.subplots(figsize=(10, 5.5))
+                fig1.patch.set_facecolor("#0d1a26")
+                ax1 = style_ax(ax1)
+                cores_bar = ["#ff6b35", "#ff8c5a", "#ffa07a", "#ffb89a", "#ffd0ba"]
+                bars = ax1.bar(resumo["categoria"], resumo["engajamento_medio"],
+                               color=cores_bar[:len(resumo)], edgecolor="none", width=0.65)
+                ax1.set_xlabel("Categoria", fontsize=10, labelpad=10)
+                ax1.set_ylabel("Engajamento Médio", fontsize=10, labelpad=10)
+                ax1.tick_params(axis="x", rotation=30, pad=6)
+                ax1.set_title("Engajamento Médio por Categoria", fontsize=12, pad=12)
+                for bar in bars:
+                    height = bar.get_height()
+                    ax1.text(bar.get_x() + bar.get_width() / 2., height - height * 0.05,
+                             f"{height:.0f}", ha="center", va="top", color="#ffffff",
+                             fontsize=9, fontweight=600)
+                fig1.tight_layout()
+                st.pyplot(fig1)
 
-        with col_b:
-            fig2, ax2 = plt.subplots(figsize=(10, 5.5))
-            fig2.patch.set_facecolor("#0d1a26")
-            cores_pie = sns.color_palette("Set2", len(resumo))
-            wedges, texts, autotexts = ax2.pie(
-                resumo["total_visualizacoes"],
-                labels=None,
-                autopct="%1.1f%%",
-                colors=cores_pie,
-                startangle=90,
-                pctdistance=0.75,
-                textprops={"color": "#ffffff", "fontsize": 9, "fontweight": 600}
-            )
-            ax2.set_title("Distribuição de Visualizações", fontsize=12, pad=12, color="#e8eef5")
-            ax2.legend(
-                wedges, resumo["categoria"],
-                loc="center left", bbox_to_anchor=(1, 0.5),
-                frameon=False, fontsize=9,
-                labelcolor="#b0c8dd"
-            )
-            fig2.tight_layout()
-            st.pyplot(fig2)
+            with col_b:
+                fig2, ax2 = plt.subplots(figsize=(10, 5.5))
+                fig2.patch.set_facecolor("#0d1a26")
+                cores_pie = sns.color_palette("Set2", len(resumo))
+                wedges, texts, autotexts = ax2.pie(
+                    resumo["total_visualizacoes"],
+                    labels=None,
+                    autopct="%1.1f%%",
+                    colors=cores_pie,
+                    startangle=90,
+                    pctdistance=0.75,
+                    textprops={"color": "#ffffff", "fontsize": 9, "fontweight": 600}
+                )
+                ax2.set_title("Distribuição de Visualizações", fontsize=12, pad=12, color="#e8eef5")
+                ax2.legend(
+                    wedges, resumo["categoria"],
+                    loc="center left", bbox_to_anchor=(1, 0.5),
+                    frameon=False, fontsize=9,
+                    labelcolor="#b0c8dd"
+                )
+                fig2.tight_layout()
+                st.pyplot(fig2)
 
-        st.dataframe(resumo, use_container_width=True, hide_index=True)
+            st.dataframe(resumo, use_container_width=True, hide_index=True)
+        except Exception:
+            st.info("Não foi possível carregar a análise por categoria.")
 
     with abas[2]:
-        st.subheader("Engajamento por Dia da Semana")
+        try:
+            st.subheader("Engajamento por Dia da Semana")
 
-        dias = engajamento_por_dia(df_filtered)
-        fig3, ax3 = plt.subplots(figsize=(10, 5))
-        fig3.patch.set_facecolor("#0d1a26")
-        ax3 = style_ax(ax3)
-        ax3.plot(dias["dia_pt"], dias["media_engajamento"],
-                 marker="o", linewidth=2.5, color="#ff6b35",
-                 markerfacecolor="#ff4d4d", markeredgecolor="#ffffff",
-                 markeredgewidth=1.5, markersize=9)
-        for _, row in dias.iterrows():
-            ax3.annotate(f"{row['media_engajamento']:.0f}",
-                         xy=(row["dia_pt"], row["media_engajamento"]),
-                         xytext=(0, 10), textcoords="offset points",
-                         ha="center", va="bottom", fontsize=8,
-                         color="#b0c8dd", fontweight=500)
-        ax3.set_xlabel("Dia da Semana", fontsize=10, labelpad=10)
-        ax3.set_ylabel("Engajamento Médio", fontsize=10, labelpad=10)
-        ax3.set_title("Engajamento Médio por Dia da Semana", fontsize=12, pad=12)
-        fig3.tight_layout()
-        st.pyplot(fig3)
+            dias = engajamento_por_dia(df_filtered)
+            fig3, ax3 = plt.subplots(figsize=(10, 5))
+            fig3.patch.set_facecolor("#0d1a26")
+            ax3 = style_ax(ax3)
+            ax3.plot(dias["dia_pt"], dias["media_engajamento"],
+                     marker="o", linewidth=2.5, color="#ff6b35",
+                     markerfacecolor="#ff4d4d", markeredgecolor="#ffffff",
+                     markeredgewidth=1.5, markersize=9)
+            for _, row in dias.iterrows():
+                ax3.annotate(f"{row['media_engajamento']:.0f}",
+                             xy=(row["dia_pt"], row["media_engajamento"]),
+                             xytext=(0, 10), textcoords="offset points",
+                             ha="center", va="bottom", fontsize=8,
+                             color="#b0c8dd", fontweight=500)
+            ax3.set_xlabel("Dia da Semana", fontsize=10, labelpad=10)
+            ax3.set_ylabel("Engajamento Médio", fontsize=10, labelpad=10)
+            ax3.set_title("Engajamento Médio por Dia da Semana", fontsize=12, pad=12)
+            fig3.tight_layout()
+            st.pyplot(fig3)
 
-        st.subheader("Tendências das Categorias ao Longo do Tempo")
-        tendencias = tendencias_categoria_ao_longo_tempo(df_filtered)
-        if not tendencias.empty:
-            fig4, ax4 = plt.subplots(figsize=(12, 5.5))
-            fig4.patch.set_facecolor("#0d1a26")
-            ax4 = style_ax(ax4)
-            cores_linhas = ["#ff6b35", "#00bcd4", "#4ecdc4", "#ffd93d", "#ff4d4d", "#a78bfa", "#34d399"]
-            for i, (cat, dados_cat) in enumerate(tendencias.groupby("categoria")):
-                cor = cores_linhas[i % len(cores_linhas)]
-                ax4.plot(dados_cat["mes_ano"], dados_cat["engajamento"],
-                         marker="o", label=cat, linewidth=2.5, color=cor,
-                         markerfacecolor=cor, markeredgecolor="none", markersize=7)
-            ax4.set_xlabel("Mês / Ano", fontsize=10, labelpad=10)
-            ax4.set_ylabel("Engajamento Total", fontsize=10, labelpad=10)
-            ax4.set_title("Tendências de Engajamento por Categoria", fontsize=12, pad=12)
-            ax4.legend(
-                loc="upper left", bbox_to_anchor=(1.01, 1),
-                frameon=True, facecolor=(0.08, 0.12, 0.18, 0.9),
-                edgecolor=(1, 1, 1, 0.08), fontsize=9,
-                labelcolor="#b0c8dd"
-            )
-            ax4.tick_params(axis="x", rotation=35, pad=6)
-            fig4.tight_layout()
-            st.pyplot(fig4)
+            st.subheader("Tendências das Categorias ao Longo do Tempo")
+            tendencias = tendencias_categoria_ao_longo_tempo(df_filtered)
+            if not tendencias.empty:
+                fig4, ax4 = plt.subplots(figsize=(12, 5.5))
+                fig4.patch.set_facecolor("#0d1a26")
+                ax4 = style_ax(ax4)
+                cores_linhas = ["#ff6b35", "#00bcd4", "#4ecdc4", "#ffd93d", "#ff4d4d", "#a78bfa", "#34d399"]
+                for i, (cat, dados_cat) in enumerate(tendencias.groupby("categoria")):
+                    cor = cores_linhas[i % len(cores_linhas)]
+                    ax4.plot(dados_cat["mes_ano"], dados_cat["engajamento"],
+                             marker="o", label=cat, linewidth=2.5, color=cor,
+                             markerfacecolor=cor, markeredgecolor="none", markersize=7)
+                ax4.set_xlabel("Mês / Ano", fontsize=10, labelpad=10)
+                ax4.set_ylabel("Engajamento Total", fontsize=10, labelpad=10)
+                ax4.set_title("Tendências de Engajamento por Categoria", fontsize=12, pad=12)
+                ax4.legend(
+                    loc="upper left", bbox_to_anchor=(1.01, 1),
+                    frameon=True, facecolor=(0.08, 0.12, 0.18, 0.9),
+                    edgecolor=(1, 1, 1, 0.08), fontsize=9,
+                    labelcolor="#b0c8dd"
+                )
+                ax4.tick_params(axis="x", rotation=35, pad=6)
+                fig4.tight_layout()
+                st.pyplot(fig4)
+        except Exception:
+            st.info("Não foi possível carregar a análise temporal.")
 
     with abas[3]:
-        colunas_exibir = ["video_id", "titulo_original", "canal", "categoria", "tags",
-                          "visualizacoes", "curtidas", "comentarios",
-                          "engajamento_total", "taxa_engajamento", "data_publicacao"]
-        colunas_exibir = [c for c in colunas_exibir if c in df_filtered.columns]
-        df_tabela = df_filtered[colunas_exibir].sort_values("engajamento_total", ascending=False)
         try:
+            colunas_exibir = ["video_id", "titulo_original", "canal", "categoria", "tags",
+                              "visualizacoes", "curtidas", "comentarios",
+                              "engajamento_total", "taxa_engajamento", "data_publicacao"]
+            colunas_exibir = [c for c in colunas_exibir if c in df_filtered.columns]
+            df_tabela = df_filtered[colunas_exibir].sort_values("engajamento_total", ascending=False)
             st.markdown(html_video_table(df_tabela, colunas_exibir), unsafe_allow_html=True)
         except Exception:
             st.dataframe(df_tabela, use_container_width=True, hide_index=True)
