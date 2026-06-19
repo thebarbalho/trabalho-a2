@@ -194,23 +194,23 @@ CUSTOM_CSS = """
     font-family: 'Inter', sans-serif !important;
     opacity: 1 !important;
     -webkit-text-fill-color: #ffffff !important;
-}
+    }
 
-/* Placeholder */
+    /* Placeholder */
 .stTextInput input::placeholder {
     color: #8faabe !important;
     opacity: 1 !important;
-}
+    }
 
-/* Estado de foco */
+    /* Estado de foco */
 .stTextInput input:focus {
     color: #ffffff !important;
-}
+    }
 
-/* BaseWeb (interno do Streamlit) */
+    /* BaseWeb (interno do Streamlit) */
 input[data-baseweb="input"] {
     color: #ffffff !important;
-}
+    }
     }
 
     .stSelectbox > div > div {
